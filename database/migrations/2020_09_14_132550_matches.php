@@ -16,7 +16,9 @@ class Matches extends Migration
         Schema::create('matches', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('game_id')->nullable();
-            $table->string('log');
+            $table->string('player')->nullable();
+            $table->string('square')->nullable();
+            $table->string('log')->nullable();
             $table->timestamps();
         });
     }

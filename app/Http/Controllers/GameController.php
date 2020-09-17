@@ -17,7 +17,13 @@ class GameController extends Controller
      */
     public function index()
     {
-        
+        if(Cookie::get('the_key')){
+            $result = Match::where('game_id', Cookie::get('the_key'))->get(['square','player']);
+            $last_player = Match::where('game_id', Cookie::get('the_key'))->latest('updated_at')->first(['player']);
+            return response()->json(array('success' => true, 'result' => $result, 'lastPlayer' => $last_player), 200);
+        } else {
+            return response()->json(array('success' => true, 'result' => 'none'), 200);
+        }
     }
 
     /**
@@ -28,7 +34,11 @@ class GameController extends Controller
      */
     public function store(Request $request)
     {
-        // $counter = $request->counter;
+        $this->validate($request, [
+            'player' => 'required|string|max:1|in:X,O',
+            'square' => 'required|integer|between:1,9',
+        ]);
+
         $game = new Game;
         $game->save();
         $last_id = $game->id;
@@ -36,19 +46,19 @@ class GameController extends Controller
         $game = Game::where('id', $game->id)->first();
         $the_key = Hash::make($last_id);
         $game->game_key = $the_key;
-        $game->save();
-
+        $game->save();   
+        
         $player = $request->player;
         $square = $request->square;
 
-        
-
         $match = new Match;
         $match->game_id = $the_key;
+        $match->player = $player;
+        $match->square = $square;
         $match->log = $player." is on square ".$square;
         $match->save();
 
-        return response()->json(array('success' => true, 'the_key' => $the_key), 200)->cookie('the_key', $the_key, 60);
+        return response()->json(array('success' => true, 'the_key' => $the_key, 'log' => $match->log), 200)->cookie('the_key', $the_key, 60);
     }
 
     /**
@@ -58,13 +68,7 @@ class GameController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function destroy(Request $request)
-    {
-        $match = new Match;
-        $match->game_id = Cookie::get('the_key');
-        $match->log = $request->info;
-        $match->save();
-
-        
+    {        
         return response()->json(array('success' => true), 200)->withCookie(Cookie::forget('the_key'));
     }
 }

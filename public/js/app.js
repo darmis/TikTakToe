@@ -1765,6 +1765,32 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       draw: false
     };
   },
+  mounted: function mounted() {
+    var _this = this;
+
+    axios.post('/api/game/get').then(function (response) {
+      if (response.data.result !== 'none') {
+        for (var i = 0; i < response.data.result.length; i++) {
+          _this.tics[response.data.result[i].square] = response.data.result[i].player;
+        }
+
+        if (response.data.lastPlayer.player === 'X') {
+          _this.isPlayerX = false;
+        } else {
+          _this.isPlayerX = true;
+        }
+
+        _this.loadLog();
+
+        _this.log += 'Previous session data loaded';
+        _this.log += '<br>';
+      } else {
+        _this.isPlayerX = true;
+      }
+    })["catch"](function (error) {
+      console.log(error.response.data);
+    });
+  },
   methods: {
     calculateWinner: function calculateWinner() {
       var lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
@@ -1801,6 +1827,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       }
     },
     OnClicked: function OnClicked(i) {
+      var _this2 = this;
+
       this.counter++;
 
       if (this.winner === "X" || this.winner === "O") {
@@ -1820,7 +1848,10 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
           counter: this.counter,
           player: this.tics[i],
           square: i + 1
-        }).then(function (response) {// console.log(response)
+        }).then(function (response) {
+          // console.log(response)
+          _this2.log += response.data.log;
+          _this2.log += '<br>';
         })["catch"](function (error) {
           console.log(error.response.data);
         });
@@ -1828,7 +1859,10 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         axios.post('/api/match/store', {
           player: this.tics[i],
           square: i + 1
-        }).then(function (response) {// console.log(response)
+        }).then(function (response) {
+          // console.log(response)
+          _this2.log += response.data.log;
+          _this2.log += '<br>';
         })["catch"](function (error) {
           console.log(error.response.data);
         });
@@ -1836,29 +1870,23 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
       this.isPlayerX = !this.isPlayerX;
       this.calculateWinner();
-      this.loadLog();
     },
     loadLog: function loadLog() {
-      var _this = this;
+      var _this3 = this;
 
-      console.log('loading log');
+      this.log = "";
       axios.post('/api/match/get').then(function (response) {
         // console.log(response.data);
-        _this.log = "";
-
         for (var i = 0; i < response.data.length; i++) {
-          if (response.data[i].log) {
-            _this.log += response.data[i].log;
-            _this.log += "<br>";
-          }
+          // if (response.data[i].log){
+          _this3.log += response.data[i].log;
+          _this3.log += "<br>"; // }    
         }
       })["catch"](function (error) {
         console.log(error.response.data);
       });
     },
     reset: function reset() {
-      console.log("reset");
-
       for (var i = 0; i < this.tics.length; i++) {
         this.$set(this.tics, i, "");
       }
@@ -1867,9 +1895,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       this.draw = false;
       this.counter = 0;
       this.log = "";
-      axios.post('/api/game/reset', {
-        info: 'Reset'
-      }).then(function (response) {// console.log(response)
+      this.isPlayerX = true;
+      axios.post('/api/game/reset').then(function (response) {// console.log(response)
       })["catch"](function (error) {
         console.log(error.response.data);
       });
